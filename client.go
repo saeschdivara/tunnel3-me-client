@@ -50,6 +50,7 @@ func main() {
 		obj := RequestInfo{}
 		err = json.Unmarshal(message, &obj)
 
+		// TODO: handle failing request (maybe server was not started yet)
 		request, err := http.NewRequest(obj.Method, "http://localhost:"+localAppPort+obj.Path, strings.NewReader(obj.Body))
 
 		headers := string(obj.Headers)
