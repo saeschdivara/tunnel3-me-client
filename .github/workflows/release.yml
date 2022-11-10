@@ -54,7 +54,7 @@ jobs:
 
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
-        run: mv tunnel3MeLocal tunnel3MeLocal_windows
+        run: mv tunnel3MeLocal.exe tunnel3MeLocal_windows.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
