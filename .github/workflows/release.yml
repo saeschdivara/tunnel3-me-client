@@ -31,7 +31,7 @@ jobs:
           - os: macos-latest
             release_suffix: mac
           - os: windows-latest
-            release_suffix: windows
+            release_suffix: windows.exe
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -54,7 +54,7 @@ jobs:
 
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
-        run: mv tunnel3MeLocal.exe tunnel3MeLocal_${{ matrix.release_suffix }}.exe
+        run: mv tunnel3MeLocal.exe tunnel3MeLocal_${{ matrix.release_suffix }}
 
       - name: Release
         uses: softprops/action-gh-release@v1
