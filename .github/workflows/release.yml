@@ -51,7 +51,12 @@ jobs:
         if: matrix.os == 'macos-12'
         run: GOARCH=arm64 go build -v ./...
 
-      - name: Run Linux Build
+      - name: Windows file name
+        if: matrix.os == 'windows-latest'
+        run: mv tunnel3MeLocal.exe tunnel3MeLocal_${{ matrix.release_suffix }}
+
+      - name: Non Windows file name
+        if: matrix.os != 'windows-latest'
         run: mv tunnel3MeLocal tunnel3MeLocal_${{ matrix.release_suffix }}
 
       - name: Release
