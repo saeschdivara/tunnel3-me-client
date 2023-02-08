@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/cloudwego/hertz/pkg/common/json"
 	"github.com/gorilla/websocket"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -23,22 +23,46 @@ type ResponseInfo struct {
 	StatusCode int
 }
 
+type CreateHostResult struct {
+	Result string `json:"result"`
+}
+
 func main() {
 
 	argsWithoutProg := os.Args[1:]
 
-	if len(argsWithoutProg) != 2 {
-		log.Fatal("Missing parameters [full-websocket-url] [local-app-port]")
+	if len(argsWithoutProg) != 3 {
+		log.Fatal("Missing parameters [base-url] [subdomain] [local-app-port]")
 	}
 
-	localAppPort := argsWithoutProg[1]
+	baseUrl := argsWithoutProg[0]
+	subdomain := argsWithoutProg[1]
+	localAppPort := argsWithoutProg[2]
 
-	c, _, err := websocket.DefaultDialer.Dial(argsWithoutProg[0], nil)
+	resp, err := http.Get("https://config." + baseUrl + "/create-host/" + subdomain)
+	if err != nil {
+		log.Fatal("Connect to create host failed:", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	obj := CreateHostResult{}
+	err = json.Unmarshal(body, &obj)
+
+	c, _, err := websocket.DefaultDialer.Dial("ws://"+baseUrl+":"+obj.Result, nil)
 	if err != nil {
 		log.Fatal("dial:", err)
 	}
 
 	defer c.Close()
+
+	httpUrl := "https://" + subdomain + "." + baseUrl + "/"
+	log.Println("Accepting connections on:", httpUrl)
 
 	for {
 		_, message, err := c.ReadMessage()
@@ -50,7 +74,6 @@ func main() {
 		obj := RequestInfo{}
 		err = json.Unmarshal(message, &obj)
 
-		// TODO: handle failing request (maybe server was not started yet)
 		request, err := http.NewRequest(obj.Method, "http://localhost:"+localAppPort+obj.Path, strings.NewReader(obj.Body))
 
 		headers := string(obj.Headers)
@@ -59,11 +82,25 @@ func main() {
 		response, err := http.DefaultClient.Do(request)
 
 		if err != nil {
-			log.Println("send:", err)
-			return
+			log.Println(obj.Method, obj.Path, "-", err)
+
+			myHeaders := make(map[string][]string)
+			myHeaders["Content-Type"] = []string{"text/html"}
+
+			responseInfo := ResponseInfo{
+				StatusCode: 503,
+				Headers:    myHeaders,
+				Body:       "Local server not available. Please start your server listening at " + localAppPort,
+			}
+
+			serialisedResponse, _ := json.Marshal(responseInfo)
+
+			c.WriteMessage(websocket.TextMessage, serialisedResponse)
+
+			continue
 		}
 
-		body, err := ioutil.ReadAll(response.Body)
+		body, err := io.ReadAll(response.Body)
 		response.Body.Close()
 
 		responseInfo := ResponseInfo{
@@ -72,11 +109,11 @@ func main() {
 			Body:       string(body),
 		}
 
+		log.Println(obj.Method, obj.Path, "-", response.StatusCode)
+
 		serialisedResponse, err := json.Marshal(responseInfo)
 
 		c.WriteMessage(websocket.TextMessage, serialisedResponse)
-
-		log.Println("response: ", response)
 	}
 }
 
