@@ -84,7 +84,21 @@ func main() {
 
 		if err != nil {
 			log.Println(obj.Method, obj.Path, "-", err)
-			return
+
+			myHeaders := make(map[string][]string)
+			myHeaders["Content-Type"] = []string{"text/html"}
+
+			responseInfo := ResponseInfo{
+				StatusCode: 503,
+				Headers:    myHeaders,
+				Body:       string("Local server not available. Please start your server listening at " + localAppPort),
+			}
+
+			serialisedResponse, _ := json.Marshal(responseInfo)
+
+			c.WriteMessage(websocket.TextMessage, serialisedResponse)
+
+			continue
 		}
 
 		body, err := io.ReadAll(response.Body)
