@@ -74,7 +74,6 @@ func main() {
 		obj := RequestInfo{}
 		err = json.Unmarshal(message, &obj)
 
-		// TODO: handle failing request (maybe server was not started yet)
 		request, err := http.NewRequest(obj.Method, "http://localhost:"+localAppPort+obj.Path, strings.NewReader(obj.Body))
 
 		headers := string(obj.Headers)
@@ -91,7 +90,7 @@ func main() {
 			responseInfo := ResponseInfo{
 				StatusCode: 503,
 				Headers:    myHeaders,
-				Body:       string("Local server not available. Please start your server listening at " + localAppPort),
+				Body:       "Local server not available. Please start your server listening at " + localAppPort,
 			}
 
 			serialisedResponse, _ := json.Marshal(responseInfo)
