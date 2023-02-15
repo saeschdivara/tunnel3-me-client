@@ -31,13 +31,19 @@ func main() {
 
 	argsWithoutProg := os.Args[1:]
 
-	if len(argsWithoutProg) != 3 {
-		log.Fatal("Missing parameters [base-url] [subdomain] [local-app-port]")
+	if len(argsWithoutProg) < 3 {
+		log.Fatal("Missing parameters [base-url] [subdomain] [local-app-port] (url-output-suffix)")
 	}
 
 	baseUrl := argsWithoutProg[0]
 	subdomain := argsWithoutProg[1]
 	localAppPort := argsWithoutProg[2]
+
+	urlSuffix := "/"
+
+	if len(argsWithoutProg) >= 4 {
+		urlSuffix = argsWithoutProg[3]
+	}
 
 	resp, err := http.Get("https://config." + baseUrl + "/create-host/" + subdomain)
 	if err != nil {
@@ -61,7 +67,7 @@ func main() {
 
 	defer c.Close()
 
-	httpUrl := "https://" + subdomain + "." + baseUrl + "/"
+	httpUrl := "https://" + subdomain + "." + baseUrl + urlSuffix
 	log.Println("Accepting connections on:", httpUrl)
 
 	for {
